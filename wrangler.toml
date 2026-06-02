@@ -1,0 +1,13 @@
+name = "milly-countdown"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+account_id = "c29d5b5c11b67dc349843b8731e93b8f"
+workers_dev = true
+
+routes = [
+  { pattern = "makeamillyoritsembarassing.theradicalparty.com", custom_domain = true }
+]
+
+[[kv_namespaces]]
+binding = "MILLY_METRICS"
+id = "771638f1bfc940ad84e53570b632f236"
