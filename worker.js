@@ -4,6 +4,8 @@
 
 const GOAL = 1_000_000;
 const ORG = 'https://github.com/Bored-investments';
+const START_DATE = '2026-06-02T00:00:00';
+const END_DATE = '2026-12-31T23:59:59';
 
 export default {
   async fetch(request, env) {
@@ -59,13 +61,29 @@ function defaultCompetitors() {
 }
 
 const fmt = n => n >= 1e6 ? `$${(n/1e6).toFixed(3)}M` : n >= 1000 ? `$${(n/1000).toFixed(1)}K` : `$${n.toFixed(0)}`;
+const fmtFull = n => `$${Math.max(0, Math.round(n)).toLocaleString('en-US')}`;
 const pct = r => Math.min((r / GOAL) * 100, 100);
+function racePct(revenue) {
+  const r = Math.max(0, Math.min(revenue, GOAL));
+  if (r <= 1_000) return (r / 1_000) * 15;
+  if (r <= 10_000) return 15 + ((r - 1_000) / 9_000) * 15;
+  if (r <= 100_000) return 30 + ((r - 10_000) / 90_000) * 20;
+  return 50 + ((r - 100_000) / 900_000) * 50;
+}
 
 function render(competitors) {
   const entries = Object.entries(competitors);
   const sorted = [...entries].sort((a, b) => b[1].revenue - a[1].revenue);
   const leaderId = sorted[0][0];
   const loserId = sorted[sorted.length - 1][0];
+  const moneyMarks = [
+    [0, '$0'],
+    [15, '$1K'],
+    [30, '$10K'],
+    [50, '$100K'],
+    [72.22, '$500K'],
+    [100, '$1M'],
+  ];
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -115,6 +133,18 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
   animation:wave 1.2s ease-in-out infinite}
 @keyframes wave{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 
+.money-scale{display:flex;align-items:end;gap:12px;padding:10px 20px 8px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.04);position:relative;z-index:2}
+.scale-spacer{width:240px;flex-shrink:0}
+.scale-axis{flex:1;height:32px;position:relative;border-bottom:1px solid rgba(255,255,255,0.09)}
+.scale-mark{position:absolute;bottom:-1px;transform:translateX(-50%);display:flex;flex-direction:column;
+  align-items:center;gap:4px;color:#6b7280;font-size:10px;font-weight:800;letter-spacing:0.4px;white-space:nowrap}
+.scale-mark::after{content:'';width:1px;height:9px;background:rgba(255,255,255,0.16)}
+.scale-mark:first-child{transform:none;align-items:flex-start}
+.scale-mark:last-child{transform:translateX(-100%);align-items:flex-end;color:#f59e0b}
+.scale-note{position:absolute;left:0;top:-2px;font-size:9px;font-weight:800;letter-spacing:1.2px;
+  color:#374151;text-transform:uppercase}
+
 .lane{display:flex;align-items:center;padding:14px 20px 14px 16px;border-bottom:1px solid rgba(255,255,255,0.03);
   gap:12px;position:relative}
 .lane:last-child{border-bottom:none}
@@ -143,6 +173,7 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .comp-github:hover{color:#9ca3af}
 .comp-github svg{width:10px;height:10px;fill:currentColor}
 .comp-rev{font-size:20px;font-weight:900;margin-top:6px;line-height:1}
+.comp-needed{font-size:10px;font-weight:700;color:#4b5563;margin-top:3px;letter-spacing:0.2px}
 
 /* Progress bar */
 .bar-wrap{flex:1;height:52px;background:#050200;border-radius:100px;position:relative;
@@ -157,6 +188,11 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .bar-ticks{position:absolute;inset:0;pointer-events:none}
 .tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.06)}
 .tick-lbl{position:absolute;top:-17px;font-size:9px;color:rgba(255,255,255,0.15);transform:translateX(-50%);white-space:nowrap}
+.bar-wrap::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:
+    linear-gradient(90deg,transparent 14.8%,rgba(255,255,255,0.09) 15%,transparent 15.2%),
+    linear-gradient(90deg,transparent 29.8%,rgba(255,255,255,0.09) 30%,transparent 30.2%),
+    linear-gradient(90deg,transparent 49.8%,rgba(255,255,255,0.09) 50%,transparent 50.2%)}
 
 /* Horse on fill */
 .horse{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:26px;z-index:3;
@@ -170,11 +206,43 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .bar-pct{position:absolute;right:10px;top:50%;transform:translateY(-50%);
   font-size:11px;font-weight:700;color:rgba(255,255,255,0.25);z-index:4}
 
+/* Time race */
+.time-race{max-width:1300px;margin:-20px auto 36px;padding:0 20px}
+.time-card{background:#0d0700;border:1px solid #1c0e00;border-radius:20px;padding:22px 24px;
+  position:relative;overflow:hidden}
+.time-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}
+.time-kicker{font-size:11px;font-weight:800;color:#4b5563;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
+.time-title{font-size:22px;font-weight:900;line-height:1.1;color:#f9fafb}
+.time-copy{font-size:13px;color:#6b7280;margin-top:6px;max-width:620px;line-height:1.5}
+.time-percent{font-size:32px;font-weight:900;color:#f59e0b;white-space:nowrap}
+.time-track{height:40px;background:#050200;border:1px solid rgba(255,255,255,0.05);border-radius:100px;
+  position:relative;overflow:hidden}
+.time-fill{height:100%;width:0;border-radius:100px;background:linear-gradient(90deg,#22c55e,#f59e0b,#ef4444);
+  transition:width 0.8s ease}
+.time-now{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:20px;filter:drop-shadow(0 0 10px #f59e0b)}
+.time-axis{display:flex;justify-content:space-between;color:#4b5563;font-size:11px;font-weight:800;margin-top:10px}
+.time-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.time-stat{border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,0.02)}
+.time-stat span{display:block;font-size:10px;font-weight:800;color:#4b5563;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:4px}
+.time-stat strong{font-size:16px;color:#d1d5db}
+
 /* === LEADERBOARD CARDS === */
 .lb-wrap{max-width:1300px;margin:0 auto 32px;padding:0 20px}
 .lb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 @media(max-width:900px){.lb-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:500px){.lb-grid{grid-template-columns:1fr}}
+@media(max-width:760px){
+  .lane{align-items:flex-start;flex-wrap:wrap}
+  .comp{width:calc(100% - 40px)}
+  .bar-wrap{flex-basis:100%;margin-left:40px}
+  .scale-spacer{width:40px}
+  .money-scale{align-items:center}
+  .scale-axis{height:34px}
+  .scale-mark{font-size:9px}
+  .time-head{align-items:flex-start;flex-direction:column}
+  .time-percent{font-size:26px}
+  .time-stats{grid-template-columns:1fr}
+}
 
 .card{background:#0d0700;border:1px solid #1c0e00;border-radius:20px;padding:24px;
   position:relative;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s}
@@ -246,8 +314,16 @@ footer a:hover{color:#9ca3af}
   <div class="track">
     <div class="finish-line"></div>
     <div class="finish-flag">🏁</div>
+    <div class="money-scale" aria-label="Money scale from zero dollars to one million dollars">
+      <div class="scale-spacer"></div>
+      <div class="scale-axis">
+        <span class="scale-note">Early money stretched</span>
+        ${moneyMarks.map(([left, label]) => `<span class="scale-mark" style="left:${left}%">${label}</span>`).join('')}
+      </div>
+    </div>
     ${sorted.map(([id, c], i) => {
       const p = pct(c.revenue);
+      const raceP = racePct(c.revenue);
       const atGate = p === 0;
       return `
     <div class="lane ${id === leaderId ? 'is-leader' : id === loserId ? 'is-loser' : ''}">
@@ -267,18 +343,46 @@ footer a:hover{color:#9ca3af}
           </div>
         </div>
         <div class="comp-rev" style="color:${c.color}">${fmt(c.revenue)}</div>
+        <div class="comp-needed">needs ${fmtFull(GOAL - c.revenue)}</div>
       </div>
       <div class="bar-wrap ${atGate ? 'at-gate' : ''}">
         <div class="bar-ticks">
-          ${[10,25,50,75].map(m => `<div class="tick" style="left:${m}%"><span class="tick-lbl">$${m===10?'100K':m===25?'250K':m===50?'500K':'750K'}</span></div>`).join('')}
+          ${moneyMarks.slice(1, -1).map(([left]) => `<div class="tick" style="left:${left}%"></div>`).join('')}
         </div>
-        <div class="bar-fill" style="--c:${c.color};width:${atGate ? '0' : Math.max(p, 1.5)}%">
+        <div class="bar-fill" style="--c:${c.color};width:${atGate ? '0' : Math.max(raceP, 1.5)}%">
           <span class="horse">🐎</span>
         </div>
         ${p > 4 ? `<span class="bar-pct">${p.toFixed(2)}%</span>` : ''}
       </div>
     </div>`;
     }).join('')}
+  </div>
+</div>
+
+<div class="time-race">
+  <div class="time-card">
+    <div class="time-head">
+      <div>
+        <div class="time-kicker">Calendar Race</div>
+        <div class="time-title">June 2 to December 31, 2026</div>
+        <p class="time-copy">The money race is not the only race. If nobody reaches $1,000,000 before the year ends, everyone loses.</p>
+      </div>
+      <div class="time-percent" id="timePct">--%</div>
+    </div>
+    <div class="time-track" aria-label="Time progress from June 2, 2026 to December 31, 2026">
+      <div class="time-fill" id="timeFill"></div>
+      <span class="time-now" id="timeNow">🏎️</span>
+    </div>
+    <div class="time-axis">
+      <span>Jun 2</span>
+      <span>Today</span>
+      <span>Dec 31</span>
+    </div>
+    <div class="time-stats">
+      <div class="time-stat"><span>Days elapsed</span><strong id="daysElapsed">---</strong></div>
+      <div class="time-stat"><span>Days left</span><strong id="daysLeft">---</strong></div>
+      <div class="time-stat"><span>Deadline</span><strong>Dec 31, 2026</strong></div>
+    </div>
   </div>
 </div>
 
@@ -346,11 +450,22 @@ footer a:hover{color:#9ca3af}
 
 <script>
 (function tick(){
-  const diff = Math.max(0, new Date('2026-12-31T23:59:59') - new Date());
+  const now = new Date();
+  const start = new Date('${START_DATE}');
+  const end = new Date('${END_DATE}');
+  const diff = Math.max(0, end - now);
+  const total = end - start;
+  const elapsed = Math.min(Math.max(now - start, 0), total);
+  const timePct = total > 0 ? Math.min((elapsed / total) * 100, 100) : 100;
   document.getElementById('d').textContent = String(Math.floor(diff/86400000)).padStart(3,'0');
   document.getElementById('h').textContent = String(Math.floor(diff%86400000/3600000)).padStart(2,'0');
   document.getElementById('m').textContent = String(Math.floor(diff%3600000/60000)).padStart(2,'0');
   document.getElementById('s').textContent = String(Math.floor(diff%60000/1000)).padStart(2,'0');
+  document.getElementById('timePct').textContent = timePct.toFixed(1) + '%';
+  document.getElementById('timeFill').style.width = timePct + '%';
+  document.getElementById('timeNow').style.left = timePct + '%';
+  document.getElementById('daysElapsed').textContent = Math.floor(elapsed / 86400000).toLocaleString();
+  document.getElementById('daysLeft').textContent = Math.ceil(diff / 86400000).toLocaleString();
   setTimeout(tick, 1000);
 })();
 </script>
