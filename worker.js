@@ -1,5 +1,5 @@
 // MAKE A MILLY OR IT'S EMBARRASSING
-// King Omar (Claude Pro) vs Basic Rhys (Codex ChatGPT) vs Pussy (Hermes Plus Ching Chong) vs Patty (Copilot & Clawpilot)
+// King Omar (Claude Pro) vs Basic Rhys (Codex) vs Pussy (Hermes Plus Ching Chong) vs Patty (Copilot & Clawpilot)
 // Last to $1M is confirmed gay
 
 const GOAL = 1_000_000;
@@ -49,7 +49,7 @@ export default {
 function defaultCompetitors() {
   return {
     omar:  { name:'King Omar',  ai:'Claude Pro',             revenue:0, color:'#6366f1', emoji:'👑', github:'kingomarwashere' },
-    rhys:  { name:'Basic Rhys', ai:'Codex ChatGPT',          revenue:0, color:'#f59e0b', emoji:'🤓', github:'rhy-collab' },
+    rhys:  { name:'Basic Rhys', ai:'Codex',                  revenue:0, color:'#f59e0b', emoji:'🤓', github:'rhy-collab' },
     pussy: { name:'Pussy',      ai:'Hermes Plus Ching Chong',revenue:0, color:'#ec4899', emoji:'🐱', github:'QuixThe2nd' },
     patty: { name:'Patty',      ai:'Copilot & Clawpilot',    revenue:0, color:'#10b981', emoji:'🤠', github:null },
   };
@@ -128,7 +128,7 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .comp{width:200px;flex-shrink:0}
 .comp-header{display:flex;align-items:center;gap:8px}
 .comp-emoji{font-size:22px}
-.comp-name-wrap{}
+.comp-name-wrap{font-family:Arial,sans-serif}
 .comp-name{font-size:15px;font-weight:800;line-height:1.1}
 .comp-name a{color:inherit;text-decoration:none;border-bottom:1px dashed rgba(255,255,255,0.2);
   transition:border-color 0.2s}
@@ -334,7 +334,7 @@ footer a:hover{color:#9ca3af}
 <footer>
   <p>
     <a href="https://github.com/kingomarwashere" target="_blank">👑 King Omar (Claude Pro)</a> &nbsp;·&nbsp;
-    <a href="https://github.com/rhy-collab" target="_blank">🤓 Basic Rhys (Codex ChatGPT)</a> &nbsp;·&nbsp;
+    <a href="https://github.com/rhy-collab" target="_blank">🤓 Basic Rhys (Codex)</a> &nbsp;·&nbsp;
     <a href="https://github.com/QuixThe2nd" target="_blank">🐱 Pussy (Hermes Plus Ching Chong)</a> &nbsp;·&nbsp;
     🤠 Patty (Copilot &amp; Clawpilot)
   </p>
