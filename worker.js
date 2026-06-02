@@ -20,24 +20,27 @@ export default {
       if (!secrets[competitor] || auth !== `Bearer ${secrets[competitor]}`) {
         return new Response('Unauthorized', { status: 401 });
       }
-      const comps = JSON.parse(await env.MILLY_METRICS.get('competitors') || '{}');
-      if (comps[competitor]) comps[competitor].revenue = parseFloat(revenue) || 0;
-      await env.MILLY_METRICS.put('competitors', JSON.stringify(comps));
+      const revenues = JSON.parse(await env.MILLY_METRICS.get('revenues') || '{}');
+      revenues[competitor] = parseFloat(revenue) || 0;
+      await env.MILLY_METRICS.put('revenues', JSON.stringify(revenues));
       return new Response('Updated');
     }
 
-    const [compsRaw, metricsRaw, baselineRaw] = await Promise.all([
-      env.MILLY_METRICS.get('competitors'),
+    const [revenuesRaw, metricsRaw] = await Promise.all([
+      env.MILLY_METRICS.get('revenues'),
       env.MILLY_METRICS.get('metrics'),
-      env.MILLY_METRICS.get('baseline'),
     ]);
 
-    const competitors = compsRaw ? JSON.parse(compsRaw) : defaultCompetitors();
+    // Static config always comes from code — KV only stores revenue numbers
+    const competitors = defaultCompetitors();
+    const revenues = revenuesRaw ? JSON.parse(revenuesRaw) : {};
     const metrics = metricsRaw ? JSON.parse(metricsRaw) : {};
 
-    // Omar's revenue = live Stripe (minus baseline)
-    if (competitors.omar) {
-      competitors.omar.revenue = metrics.total_revenue || 0;
+    // Omar's revenue = live Stripe
+    competitors.omar.revenue = metrics.total_revenue || 0;
+    // Others = self-reported via /update API
+    for (const id of ['rhys', 'pussy', 'patty']) {
+      if (revenues[id] != null) competitors[id].revenue = revenues[id];
     }
 
     return new Response(render(competitors), {
