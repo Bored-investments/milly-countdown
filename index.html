@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$1,000,000 — End of Year 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#ffc107;--gold2:#ff9800;--green:#00ff88;
+  --bg:#030a05;--bg2:#061208;--dim:#2a5c30;
+  --fhead:'Courier New',monospace;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:#c8f8c8;font-family:var(--fhead)}
+
+/* Matrix canvas */
+#canvas{position:fixed;inset:0;z-index:0;opacity:0.18}
+
+/* Hex grid */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='70'%3E%3Cpolygon points='20,1 39,11 39,31 20,41 1,31 1,11' fill='none' stroke='rgba(0,200,80,0.04)' stroke-width='0.6'/%3E%3C/svg%3E");
+}
+
+/* Scan line */
+body::after{
+  content:'';position:fixed;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(transparent,rgba(0,255,80,0.05),transparent);
+  animation:scan 7s linear infinite;z-index:1;pointer-events:none;
+}
+@keyframes scan{from{transform:translateY(-2px)}to{transform:translateY(100vh)}}
+
+/* Main layout */
+.wrap{
+  position:relative;z-index:2;
+  width:100%;height:100%;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:0;padding:20px;
+}
+
+/* Header */
+.hdr{
+  font-size:11px;letter-spacing:0.4em;color:var(--dim);
+  margin-bottom:8px;
+  animation:fadeIn 1s ease;
+}
+.hdr span{color:var(--green);opacity:0.7}
+
+/* Title */
+.title{
+  font-size:clamp(20px,3vw,32px);
+  font-weight:900;letter-spacing:0.25em;
+  color:var(--gold);
+  text-shadow:0 0 20px rgba(255,193,7,0.5),0 0 60px rgba(255,152,0,0.2);
+  margin-bottom:6px;
+  animation:fadeIn 1s ease 0.2s both;
+}
+
+/* Tagline */
+.tagline{
+  font-size:clamp(9px,1.2vw,13px);letter-spacing:0.3em;
+  color:rgba(255,193,7,0.45);margin-bottom:32px;
+  animation:fadeIn 1s ease 0.3s both;
+}
+
+/* Countdown */
+.countdown{
+  display:flex;align-items:center;gap:clamp(8px,2vw,24px);
+  margin-bottom:24px;
+  animation:fadeIn 0.8s ease 0.4s both;
+}
+.unit{display:flex;flex-direction:column;align-items:center;gap:4px}
+.num{
+  font-size:clamp(48px,8vw,110px);font-weight:900;line-height:1;
+  color:var(--gold);
+  text-shadow:0 0 30px rgba(255,193,7,0.6),0 0 80px rgba(255,152,0,0.3);
+  font-variant-numeric:tabular-nums;
+  transition:color 0.3s;
+}
+.num.tick{color:#fff;text-shadow:0 0 40px rgba(255,255,255,0.8)}
+.lbl{font-size:clamp(8px,1vw,11px);letter-spacing:0.3em;color:var(--dim)}
+.sep{
+  font-size:clamp(36px,6vw,80px);font-weight:900;
+  color:rgba(255,193,7,0.3);line-height:1;padding-bottom:20px;
+}
+
+/* Year progress */
+.progress-section{
+  width:min(700px,90vw);margin-bottom:20px;
+  animation:fadeIn 1s ease 0.6s both;
+}
+.progress-row{display:flex;justify-content:space-between;font-size:10px;letter-spacing:0.15em;color:var(--dim);margin-bottom:6px}
+.progress-row span{color:var(--green)}
+.bar-wrap{
+  height:8px;background:rgba(0,255,80,0.07);
+  border-radius:4px;overflow:hidden;
+  border:1px solid rgba(0,255,80,0.12);
+}
+.bar{
+  height:100%;
+  background:linear-gradient(90deg,rgba(0,180,80,0.5),var(--green));
+  box-shadow:0 0 12px rgba(0,255,136,0.4);
+  transition:width 1s ease;
+}
+.bar-pct{text-align:right;font-size:10px;color:var(--green);margin-top:4px;letter-spacing:0.1em}
+
+/* Stats row */
+.stats{
+  display:flex;gap:clamp(16px,4vw,48px);
+  font-size:clamp(10px,1.3vw,13px);letter-spacing:0.12em;
+  margin-bottom:24px;
+  animation:fadeIn 1s ease 0.7s both;
+}
+.stat{display:flex;flex-direction:column;align-items:center;gap:4px}
+.stat-val{color:var(--gold);font-size:clamp(14px,2vw,22px);font-weight:700;text-shadow:0 0 10px rgba(255,193,7,0.4)}
+.stat-lbl{color:var(--dim);font-size:10px;letter-spacing:0.18em}
+
+/* Footer */
+.footer{
+  font-size:9px;letter-spacing:0.25em;
+  color:rgba(0,200,80,0.2);
+  animation:fadeIn 1.5s ease 1s both;
+}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glow{0%,100%{text-shadow:0 0 30px rgba(255,193,7,0.6),0 0 80px rgba(255,152,0,0.3)}50%{text-shadow:0 0 50px rgba(255,193,7,0.9),0 0 120px rgba(255,152,0,0.5)}}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div class="wrap">
+  <div class="hdr">⬡ <span>J.A.R.V.I.S</span> · MISSION CONTROL · FINANCIAL DIRECTIVE #001</div>
+
+  <div class="title">$1,000,000</div>
+  <div class="tagline">BY 31 DECEMBER 2026 · OR IT'S EMBARRASSING</div>
+
+  <div class="countdown">
+    <div class="unit"><span class="num" id="d">000</span><span class="lbl">DAYS</span></div>
+    <div class="sep">:</div>
+    <div class="unit"><span class="num" id="h">00</span><span class="lbl">HOURS</span></div>
+    <div class="sep">:</div>
+    <div class="unit"><span class="num" id="m">00</span><span class="lbl">MINUTES</span></div>
+    <div class="sep">:</div>
+    <div class="unit"><span class="num" id="s">00</span><span class="lbl">SECONDS</span></div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-row"><span style="color:rgba(255,193,7,0.5)">JAN 1</span><span>YEAR PROGRESS</span><span style="color:rgba(255,193,7,0.5)">DEC 31</span></div>
+    <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+    <div class="bar-pct" id="pct"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="stat-val" id="daily">$0</span><span class="stat-lbl">DAILY PACE NEEDED</span></div>
+    <div class="stat"><span class="stat-val" id="weekly">$0</span><span class="stat-lbl">WEEKLY PACE</span></div>
+    <div class="stat"><span class="stat-val" id="remain-days">0</span><span class="stat-lbl">DAYS REMAINING</span></div>
+    <div class="stat"><span class="stat-val" id="remain-pct">0%</span><span class="stat-lbl">YEAR REMAINING</span></div>
+  </div>
+
+  <div class="footer">SURVEILLANCE ACTIVE · CLOCK IS TICKING · NO EXCUSES ACCEPTED</div>
+</div>
+
+<script>
+// Matrix rain
+const canvas = document.getElementById('canvas')
+const ctx    = canvas.getContext('2d')
+canvas.width  = window.innerWidth
+canvas.height = window.innerHeight
+const cols  = Math.floor(canvas.width / 18)
+const drops = Array(cols).fill(Math.random() * 20)
+const chars = 'アイウエオカキクケコ01101001$1000000MILLION'.split('')
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(3,10,5,0.05)'
+  ctx.fillRect(0,0,canvas.width,canvas.height)
+  ctx.fillStyle = 'rgba(0,200,80,0.5)'
+  ctx.font = '12px monospace'
+  drops.forEach((y,i) => {
+    ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,y*18)
+    if (y*18 > canvas.height && Math.random() > 0.975) drops[i] = 0
+    drops[i] += 0.5
+  })
+}
+setInterval(drawMatrix, 50)
+window.addEventListener('resize', () => { canvas.width=window.innerWidth; canvas.height=window.innerHeight })
+
+// Countdown
+const TARGET = new Date('2026-12-31T23:59:59+11:00')
+const YEAR_START = new Date('2026-01-01T00:00:00+11:00')
+const YEAR_END   = new Date('2026-12-31T23:59:59+11:00')
+const YEAR_TOTAL = YEAR_END - YEAR_START
+
+function fmt(n, pad=2) { return String(n).padStart(pad,'0') }
+function fmtMoney(n) {
+  if (n >= 1000000) return '$' + (n/1000000).toFixed(2) + 'M'
+  if (n >= 1000)    return '$' + Math.ceil(n).toLocaleString()
+  return '$' + Math.ceil(n)
+}
+
+let lastSec = -1
+function tick() {
+  const now  = new Date()
+  const diff = Math.max(0, TARGET - now)
+
+  const totalSecs = Math.floor(diff/1000)
+  const days  = Math.floor(totalSecs/86400)
+  const hours = Math.floor((totalSecs%86400)/3600)
+  const mins  = Math.floor((totalSecs%3600)/60)
+  const secs  = totalSecs%60
+
+  // Flash seconds element
+  const sEl = document.getElementById('s')
+  if (secs !== lastSec) {
+    sEl.classList.add('tick')
+    setTimeout(() => sEl.classList.remove('tick'), 150)
+    lastSec = secs
+  }
+
+  document.getElementById('d').textContent = fmt(days, 3)
+  document.getElementById('h').textContent = fmt(hours)
+  document.getElementById('m').textContent = fmt(mins)
+  document.getElementById('s').textContent = fmt(secs)
+
+  // Year progress
+  const yearElapsed = now - YEAR_START
+  const yearPct     = Math.min(100, Math.round(yearElapsed/YEAR_TOTAL*1000)/10)
+  const yearRemain  = 100 - yearPct
+  document.getElementById('bar').style.width = yearPct + '%'
+  document.getElementById('pct').textContent  = yearPct.toFixed(1) + '% of 2026 elapsed'
+
+  // Pace
+  const dailyNeed  = diff > 0 ? 1000000/(diff/86400000) : 0
+  const weeklyNeed = dailyNeed * 7
+  document.getElementById('daily').textContent    = fmtMoney(dailyNeed)
+  document.getElementById('weekly').textContent   = fmtMoney(weeklyNeed)
+  document.getElementById('remain-days').textContent = days
+  document.getElementById('remain-pct').textContent  = yearRemain.toFixed(1) + '%'
+
+  // Title color shift as deadline approaches
+  if (days < 30)       document.querySelector('.title').style.color = '#ff5722'
+  else if (days < 90)  document.querySelector('.title').style.color = '#ff9800'
+}
+tick()
+setInterval(tick, 1000)
+</script>
+</body>
+</html>
