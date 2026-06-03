@@ -28,13 +28,14 @@ export default {
       return new Response('Updated');
     }
 
-    const [revenuesRaw, metricsRaw] = await Promise.all([
+    const competitors = defaultCompetitors();
+
+    const [revenuesRaw, metricsRaw, ...commitArrays] = await Promise.all([
       env.MILLY_METRICS.get('revenues'),
       env.MILLY_METRICS.get('metrics'),
+      ...Object.values(competitors).map(c => fetchCommits(env, c.project?.repoSlug)),
     ]);
 
-    // Static config always comes from code — KV only stores revenue numbers
-    const competitors = defaultCompetitors();
     const revenues = revenuesRaw ? JSON.parse(revenuesRaw) : {};
     const metrics = metricsRaw ? JSON.parse(metricsRaw) : {};
 
@@ -44,6 +45,10 @@ export default {
     for (const id of ['rhys', 'pussy', 'patty']) {
       if (revenues[id] != null) competitors[id].revenue = revenues[id];
     }
+    // Inject live commits
+    Object.keys(competitors).forEach((id, i) => {
+      if (commitArrays[i]?.length) competitors[id].project.latestCommits = commitArrays[i];
+    });
 
     return new Response(render(competitors), {
       headers: { 'Content-Type': 'text/html;charset=UTF-8', 'Cache-Control': 'no-store' }
@@ -54,14 +59,31 @@ export default {
 function defaultCompetitors() {
   return {
     omar:  { name:'King Omar',  ai:'Claude Pro',             revenue:0, color:'#6366f1', emoji:'👑', github:'kingomarwashere',
-      project:{ domain:'fakedoctorcertificate.com', repo:null, commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'Instant compliance-style document generator for clinics, schools, and employers that need proof fast.', focus:'Ship templates, checkout, and trust signals before the first sales push.' } },
+      project:{ domain:'chuckasickie.org', site:'https://makeamillyoritsembarassing.theradicalparty.com', repo:'https://github.com/Bored-investments/chuckasickie', repoSlug:'Bored-investments/chuckasickie', commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'AutoContent AI — done-for-you social media and email content for small businesses.', focus:'Drive first paying customers through warm outreach, X/Twitter, and Reddit.' } },
     rhys:  { name:'Basic Rhys', ai:'Codex',                  revenue:0, color:'#f59e0b', emoji:'🤓', github:'rhy-collab',
-      project:{ domain:'haggle.com', site:'https://www.usehaggle.shop', repo:'https://github.com/rhy-collab/haggle', localPath:'/Users/rhys/Documents/GitHub/haggle', branch:'convex-clerk-rebuild', commitsToday:3, totalCommits:18, openPrs:0, mergedPrs:0, latestCommits:['78c19af Fix unsupported flow recovery','d3d2a32 Refactor Haggle intake state machine','2b562bb Delay request card until quote details are complete','904e55b Fix chat fallback logic','f61444d Resolve remaining Vercel dependency alert'], idea:'AI negotiation layer that helps buyers push prices down and helps merchants rescue abandoned deals.', focus:'Convert founder demos into merchant workflows, analytics, and real follow-up loops.' } },
+      project:{ domain:'haggle.com', site:'https://www.usehaggle.shop', repo:'https://github.com/rhy-collab/haggle', repoSlug:'rhy-collab/haggle', branch:'convex-clerk-rebuild', commitsToday:3, totalCommits:18, openPrs:0, mergedPrs:0, latestCommits:[], idea:'AI negotiation layer that helps buyers push prices down and helps merchants rescue abandoned deals.', focus:'Convert founder demos into merchant workflows, analytics, and real follow-up loops.' } },
     pussy: { name:'Pussy',      ai:'Hermes Plus Ching Chong',revenue:0, color:'#ec4899', emoji:'🐱', github:'QuixThe2nd',
       project:{ domain:'piratedvideo.com', repo:null, commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'Video discovery and clipping tool that turns messy media libraries into searchable watchable moments.', focus:'Prove legal content sourcing, creator tools, and a subscription-grade playback experience.' } },
     patty: { name:'Patty',      ai:'Copilot & Clawpilot',    revenue:0, color:'#10b981', emoji:'🤠', github:null,
       project:{ domain:'microsoft.com', repo:null, commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'Enterprise productivity empire built around practical software that prints money at boring scale.', focus:'Connect a real repo, pick one product wedge, and stop hiding behind the biggest domain on earth.' } },
   };
+}
+
+async function fetchCommits(env, repoSlug) {
+  if (!repoSlug) return [];
+  const cacheKey = `commits:${repoSlug}`;
+  const cached = await env.MILLY_METRICS.get(cacheKey);
+  if (cached) return JSON.parse(cached);
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repoSlug}/commits?per_page=5`, {
+      headers: { 'User-Agent': 'milly-countdown' }
+    });
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    const commits = data.map(c => `${c.sha?.slice(0,7)} ${c.commit?.message?.split('\n')[0]?.slice(0,60)}`);
+    await env.MILLY_METRICS.put(cacheKey, JSON.stringify(commits), { expirationTtl: 300 });
+    return commits;
+  } catch { return []; }
 }
 
 const fmt = n => n >= 1e6 ? `$${(n/1e6).toFixed(3)}M` : n >= 1000 ? `$${(n/1000).toFixed(1)}K` : `$${n.toFixed(0)}`;
@@ -502,7 +524,7 @@ footer a:hover{color:#9ca3af}
       </div>
       <div class="heat-note"><span>last 6 weeks</span><span>${connected ? 'GitHub activity demo' : 'waiting for repo'}</span></div>
       ${project.latestCommits?.length ? `<div class="commit-list">
-        <div class="commit-list-title">Latest Haggle commits</div>
+        <div class="commit-list-title">Latest commits</div>
         ${project.latestCommits.slice(0, 3).map(commit => `<div class="commit-item">${commit}</div>`).join('')}
       </div>` : ''}
     </div>`;
