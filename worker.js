@@ -53,10 +53,14 @@ export default {
 
 function defaultCompetitors() {
   return {
-    omar:  { name:'King Omar',  ai:'Claude Pro',             revenue:0, color:'#6366f1', emoji:'👑', github:'kingomarwashere' },
-    rhys:  { name:'Basic Rhys', ai:'Codex',                  revenue:0, color:'#f59e0b', emoji:'🤓', github:'rhy-collab' },
-    pussy: { name:'Pussy',      ai:'Hermes Plus Ching Chong',revenue:0, color:'#ec4899', emoji:'🐱', github:'QuixThe2nd' },
-    patty: { name:'Patty',      ai:'Copilot & Clawpilot',    revenue:0, color:'#10b981', emoji:'🤠', github:null },
+    omar:  { name:'King Omar',  ai:'Claude Pro',             revenue:0, color:'#6366f1', emoji:'👑', github:'kingomarwashere',
+      project:{ domain:'fakedoctorcertificate.com', repo:null, commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'Instant compliance-style document generator for clinics, schools, and employers that need proof fast.', focus:'Ship templates, checkout, and trust signals before the first sales push.' } },
+    rhys:  { name:'Basic Rhys', ai:'Codex',                  revenue:0, color:'#f59e0b', emoji:'🤓', github:'rhy-collab',
+      project:{ domain:'haggle.com', site:'https://www.usehaggle.shop', repo:'https://github.com/rhy-collab/haggle', localPath:'/Users/rhys/Documents/GitHub/haggle', branch:'convex-clerk-rebuild', commitsToday:3, totalCommits:18, openPrs:0, mergedPrs:0, latestCommits:['78c19af Fix unsupported flow recovery','d3d2a32 Refactor Haggle intake state machine','2b562bb Delay request card until quote details are complete','904e55b Fix chat fallback logic','f61444d Resolve remaining Vercel dependency alert'], idea:'AI negotiation layer that helps buyers push prices down and helps merchants rescue abandoned deals.', focus:'Convert founder demos into merchant workflows, analytics, and real follow-up loops.' } },
+    pussy: { name:'Pussy',      ai:'Hermes Plus Ching Chong',revenue:0, color:'#ec4899', emoji:'🐱', github:'QuixThe2nd',
+      project:{ domain:'piratedvideo.com', repo:null, commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'Video discovery and clipping tool that turns messy media libraries into searchable watchable moments.', focus:'Prove legal content sourcing, creator tools, and a subscription-grade playback experience.' } },
+    patty: { name:'Patty',      ai:'Copilot & Clawpilot',    revenue:0, color:'#10b981', emoji:'🤠', github:null,
+      project:{ domain:'microsoft.com', repo:null, commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'Enterprise productivity empire built around practical software that prints money at boring scale.', focus:'Connect a real repo, pick one product wedge, and stop hiding behind the biggest domain on earth.' } },
   };
 }
 
@@ -69,6 +73,18 @@ function racePct(revenue) {
   if (r <= 10_000) return 15 + ((r - 1_000) / 9_000) * 15;
   if (r <= 100_000) return 30 + ((r - 10_000) / 90_000) * 20;
   return 50 + ((r - 100_000) / 900_000) * 50;
+}
+function heatCells(id, connected) {
+  return Array.from({ length: 42 }, (_, i) => {
+    if (!connected) return 0;
+    const seed = id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const n = (seed + i * 7 + Math.floor(i / 6) * 3) % 11;
+    if (i > 36) return n > 3 ? 4 : 2;
+    if (n > 8) return 4;
+    if (n > 6) return 3;
+    if (n > 3) return 2;
+    return n > 1 ? 1 : 0;
+  });
 }
 
 function render(competitors) {
@@ -231,6 +247,8 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .lb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 @media(max-width:900px){.lb-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:500px){.lb-grid{grid-template-columns:1fr}}
+@media(max-width:1100px){.acct-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.acct-grid{grid-template-columns:1fr}.acct-head{align-items:flex-start;flex-direction:column}}
 @media(max-width:760px){
   .lane{align-items:flex-start;flex-wrap:wrap}
   .comp{width:calc(100% - 40px)}
@@ -268,6 +286,42 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
   text-decoration:none;margin-top:10px;transition:color 0.2s}
 .card-github:hover{color:#9ca3af}
 .card-github svg{width:13px;height:13px;fill:currentColor}
+
+/* === ACCOUNTABILITY === */
+.accountability{max-width:1300px;margin:0 auto 32px;padding:0 20px}
+.acct-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:16px}
+.acct-kicker{font-size:11px;font-weight:800;color:#4b5563;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
+.acct-title{font-size:24px;font-weight:900;color:#f9fafb;line-height:1.1}
+.acct-copy{font-size:13px;color:#6b7280;line-height:1.5;max-width:700px;margin-top:6px}
+.acct-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.acct-card{background:#0d0700;border:1px solid #1c0e00;border-radius:20px;padding:20px;
+  min-height:360px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.acct-card::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:var(--c)}
+.acct-player{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.acct-emoji{font-size:24px}
+.acct-name{font-size:15px;font-weight:900;color:#f9fafb}
+.acct-ai{font-size:10px;font-weight:800;color:#4b5563;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.acct-domain{font-size:clamp(15px,1.35vw,18px);font-weight:900;color:var(--c);line-height:1.15;margin-bottom:10px;overflow-wrap:anywhere}
+.acct-idea,.acct-focus{font-size:12px;color:#9ca3af;line-height:1.45;margin-bottom:10px}
+.acct-focus{color:#6b7280}
+.repo-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;
+  padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)}
+.repo-link,.repo-missing{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;
+  text-decoration:none;border-radius:999px;padding:5px 10px}
+.repo-link{background:rgba(34,197,94,0.1);color:#86efac;border:1px solid rgba(34,197,94,0.25)}
+.repo-missing{background:rgba(255,255,255,0.04);color:#6b7280;border:1px solid rgba(255,255,255,0.08)}
+.commit-today{font-size:11px;font-weight:900;color:#d1d5db;white-space:nowrap}
+.acct-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.acct-stat{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:8px}
+.acct-stat span{display:block;font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;font-weight:800}
+.acct-stat strong{font-size:15px;color:#d1d5db}
+.heatmap{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;margin-top:14px}
+.heat-cell{aspect-ratio:1;border-radius:3px;background:#161616;border:1px solid rgba(255,255,255,0.03)}
+.heat-cell.l1{background:#12351f}.heat-cell.l2{background:#1f6b35}.heat-cell.l3{background:#28a745}.heat-cell.l4{background:#7ee787}
+.heat-note{font-size:10px;color:#4b5563;margin-top:8px;display:flex;justify-content:space-between;gap:8px}
+.commit-list{margin-top:12px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px}
+.commit-list-title{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;font-weight:900;margin-bottom:6px}
+.commit-item{font-size:10px;color:#6b7280;line-height:1.4;margin-top:4px}
 
 /* === COUNTDOWN === */
 .cd-wrap{text-align:center;padding:32px 20px;border-top:1px solid #140900}
@@ -406,6 +460,53 @@ footer a:hover{color:#9ca3af}
         github.com/${c.github}
       </a>` : `<span class="card-github" style="opacity:0.3">no github connected</span>`}
     </div>`).join('')}
+  </div>
+</div>
+
+<div class="accountability">
+  <div class="acct-head">
+    <div>
+      <div class="acct-kicker">Project Accountability</div>
+      <div class="acct-title">Show the business, then show the work</div>
+      <p class="acct-copy">Each player needs one main money-making project, a connected GitHub repo, and a public streak of commits or pull requests against that repo.</p>
+    </div>
+  </div>
+  <div class="acct-grid">
+    ${sorted.map(([id, c]) => {
+      const project = c.project || {};
+      const connected = Boolean(project.repo);
+      const cells = heatCells(id, connected);
+      return `
+    <div class="acct-card" style="--c:${c.color}">
+      <div class="acct-player">
+        <span class="acct-emoji">${c.emoji}</span>
+        <div>
+          <div class="acct-name">${c.name}</div>
+          <div class="acct-ai">${c.ai}</div>
+        </div>
+      </div>
+      <div class="acct-domain">${project.site ? `<a href="${project.site}" target="_blank" style="color:inherit;text-decoration:none">${project.domain}</a>` : project.domain}</div>
+      <p class="acct-idea">${project.idea}</p>
+      <p class="acct-focus">${project.focus}</p>
+      <div class="repo-row">
+        ${connected ? `<a class="repo-link" href="${project.repo}" target="_blank">repo connected</a>` : `<span class="repo-missing">repo needed</span>`}
+        <span class="commit-today">${project.commitsToday || 0} today</span>
+      </div>
+      <div class="acct-stats">
+        <div class="acct-stat"><span>commits</span><strong>${project.totalCommits || 0}</strong></div>
+        <div class="acct-stat"><span>open PRs</span><strong>${project.openPrs || 0}</strong></div>
+        <div class="acct-stat"><span>merged PRs</span><strong>${project.mergedPrs || 0}</strong></div>
+      </div>
+      <div class="heatmap" aria-label="${c.name} commit heat map">
+        ${cells.map(level => `<span class="heat-cell l${level}"></span>`).join('')}
+      </div>
+      <div class="heat-note"><span>last 6 weeks</span><span>${connected ? 'GitHub activity demo' : 'waiting for repo'}</span></div>
+      ${project.latestCommits?.length ? `<div class="commit-list">
+        <div class="commit-list-title">Latest Haggle commits</div>
+        ${project.latestCommits.slice(0, 3).map(commit => `<div class="commit-item">${commit}</div>`).join('')}
+      </div>` : ''}
+    </div>`;
+    }).join('')}
   </div>
 </div>
 
