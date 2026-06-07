@@ -105,6 +105,17 @@ function racePct(revenue) {
   if (r <= 100_000) return 30 + ((r - 10_000) / 90_000) * 20;
   return 50 + ((r - 100_000) / 900_000) * 50;
 }
+function productPct(project) {
+  const commits = project?.totalCommits || 0;
+  let steps = project?.domain ? 1 : 0;
+  if (project?.repo || commits >= 1) steps = Math.max(steps, 2);
+  if (commits >= 5) steps = Math.max(steps, 3);
+  if (commits >= 10) steps = Math.max(steps, 4);
+  if (commits >= 25) steps = Math.max(steps, 5);
+  if (commits >= 50) steps = Math.max(steps, 6);
+  if (commits >= 100) steps = Math.max(steps, 7);
+  return Math.min((steps / 7) * 100, 100);
+}
 function heatCells(id, connected) {
   return Array.from({ length: 42 }, (_, i) => {
     if (!connected) return 0;
@@ -374,7 +385,8 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .company-main{min-width:0}
 .process-axis{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px}
 .process-step{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:0.7px;font-weight:900;text-align:center}
-.company-track{height:52px;background:#050200;border:1px solid rgba(255,255,255,0.05);border-radius:999px;
+.company-section-label{font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1.4px;font-weight:900;margin:0 0 8px}
+.company-track{height:48px;background:#050200;border:1px solid rgba(255,255,255,0.05);border-radius:999px;
   position:relative;overflow:hidden}
 .company-track::before{content:'';position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(90deg,transparent 0,transparent calc(14.285% - 1px),rgba(255,255,255,0.08) calc(14.285% - 1px),rgba(255,255,255,0.08) 14.285%)}
@@ -382,9 +394,20 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
   width:0;transition:width 1.4s cubic-bezier(0.34,1.56,0.64,1);position:relative}
 .company-horse{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:25px;
   filter:drop-shadow(0 0 10px var(--c));animation:trot 0.35s steps(2,end) infinite}
+.commit-race{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)}
+.commit-axis{display:flex;justify-content:space-between;color:#4b5563;font-size:9px;font-weight:900;letter-spacing:0.5px;margin-bottom:6px}
+.commit-track{height:28px;background:#050200;border:1px solid rgba(255,255,255,0.05);border-radius:999px;position:relative;overflow:hidden}
+.commit-track::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),rgba(255,255,255,0.06) calc(10% - 1px),rgba(255,255,255,0.06) 10%)}
+.commit-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#166534,#22c55e,#7ee787);width:0;
+  transition:width 1.2s cubic-bezier(0.34,1.56,0.64,1);position:relative}
+.commit-horse{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:17px;filter:drop-shadow(0 0 8px #22c55e)}
 .company-progress{display:flex;justify-content:space-between;align-items:center;margin-top:9px;color:#6b7280;font-size:11px;font-weight:800}
 .company-commits{color:#d1d5db}
 .company-latest{font-size:10px;color:#4b5563;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.company-heat{margin-top:12px;display:grid;grid-template-columns:repeat(21,1fr);gap:3px;max-width:520px}
+.company-heat .heat-cell{min-width:0}
+.company-heat-note{font-size:10px;color:#4b5563;margin-top:7px;display:flex;justify-content:space-between;max-width:520px}
 
 /* === COUNTDOWN === */
 .cd-wrap{text-align:center;padding:32px 20px;border-top:1px solid #140900}
@@ -539,7 +562,9 @@ footer a:hover{color:#9ca3af}
       const connected = Boolean(project?.repo);
       const commitTotal = project?.totalCommits || 0;
       const commitPct = Math.min((commitTotal / 1000) * 100, 100);
+      const buildPct = productPct(project);
       const latest = project?.latestCommits?.[0] || 'No commits connected yet';
+      const cells = heatCells(`${id}-${index}`, connected);
       return `
     <div class="company-row" style="--c:${c.color}">
       <div class="company-side">
@@ -559,6 +584,7 @@ footer a:hover{color:#9ca3af}
         </div>
       </div>
       <div class="company-main">
+        <div class="company-section-label">Product path</div>
         <div class="process-axis">
           <span class="process-step">URL</span>
           <span class="process-step">Front end</span>
@@ -568,14 +594,31 @@ footer a:hover{color:#9ca3af}
           <span class="process-step">10 users</span>
           <span class="process-step">1K views</span>
         </div>
-        <div class="company-track" aria-label="${project.domain} repo commit progress toward 1000 commits">
-          <div class="company-fill" style="--c:${c.color};width:${Math.max(commitPct, connected ? 1.5 : 0)}%">
+        <div class="company-track" aria-label="${project.domain} product milestone progress">
+          <div class="company-fill" style="--c:${c.color};width:${Math.max(buildPct, project?.domain ? 1.5 : 0)}%">
             <span class="company-horse">🐎</span>
           </div>
         </div>
         <div class="company-progress">
-          <span class="company-commits">${commitTotal} / 1,000 commits</span>
-          <span>${project.commitsToday || 0} today · ${project.mergedPrs || 0} merged PRs</span>
+          <span>${Math.round(buildPct)}% through product checkpoints</span>
+          <span>${project.site ? 'URL live' : 'URL named'} · ${connected ? 'repo linked' : 'repo needed'}</span>
+        </div>
+        <div class="commit-race">
+          <div class="company-section-label">Commit race</div>
+          <div class="commit-axis"><span>0</span><span>250</span><span>500</span><span>750</span><span>1,000</span></div>
+          <div class="commit-track" aria-label="${project.domain} commit progress toward 1000 commits">
+            <div class="commit-fill" style="width:${Math.max(commitPct, connected ? 1.5 : 0)}%">
+              <span class="commit-horse">🐎</span>
+            </div>
+          </div>
+          <div class="company-progress">
+            <span class="company-commits">${commitTotal} / 1,000 commits</span>
+            <span>${project.commitsToday || 0} today · ${project.mergedPrs || 0} merged PRs</span>
+          </div>
+          <div class="company-heat" aria-label="${project.domain} recent GitHub commit heat map">
+            ${cells.map(level => `<span class="heat-cell l${level}"></span>`).join('')}
+          </div>
+          <div class="company-heat-note"><span>recent repo activity</span><span>${connected ? 'GitHub-style heatmap' : 'waiting for repo'}</span></div>
         </div>
         <div class="company-latest">${latest}</div>
       </div>
