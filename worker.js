@@ -29,11 +29,14 @@ export default {
     }
 
     const competitors = defaultCompetitors();
+    const commitTargets = Object.entries(competitors).flatMap(([id, c]) =>
+      (c.projects || [c.project]).map((project, index) => ({ id, index, project })).filter(({ project }) => project?.repoSlug)
+    );
 
     const [revenuesRaw, metricsRaw, ...commitArrays] = await Promise.all([
       env.MILLY_METRICS.get('revenues'),
       env.MILLY_METRICS.get('metrics'),
-      ...Object.values(competitors).map(c => fetchCommits(env, c.project?.repoSlug)),
+      ...commitTargets.map(({ project }) => fetchCommits(env, project.repoSlug)),
     ]);
 
     const revenues = revenuesRaw ? JSON.parse(revenuesRaw) : {};
@@ -46,8 +49,10 @@ export default {
       if (revenues[id] != null) competitors[id].revenue = revenues[id];
     }
     // Inject live commits
-    Object.keys(competitors).forEach((id, i) => {
-      if (commitArrays[i]?.length) competitors[id].project.latestCommits = commitArrays[i];
+    commitTargets.forEach(({ id, index }, i) => {
+      if (!commitArrays[i]?.length) return;
+      const projects = competitors[id].projects || [competitors[id].project];
+      projects[index].latestCommits = commitArrays[i];
     });
 
     return new Response(render(competitors), {
@@ -61,7 +66,11 @@ function defaultCompetitors() {
     omar:  { name:'King Omar',  ai:'Claude Pro',             revenue:0, color:'#6366f1', emoji:'👑', github:'kingomarwashere',
       project:{ domain:'chuckasickie.org', site:'https://makeamillyoritsembarassing.theradicalparty.com', repo:'https://github.com/Bored-investments/chuckasickie', repoSlug:'Bored-investments/chuckasickie', commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'AutoContent AI — done-for-you social media and email content for small businesses.', focus:'Drive first paying customers through warm outreach, X/Twitter, and Reddit.' } },
     rhys:  { name:'Basic Rhys', ai:'Codex',                  revenue:0, color:'#f59e0b', emoji:'🤓', github:'rhy-collab',
-      project:{ domain:'haggle.com', site:'https://www.usehaggle.shop', repo:'https://github.com/rhy-collab/haggle', repoSlug:'rhy-collab/haggle', branch:'convex-clerk-rebuild', commitsToday:3, totalCommits:18, openPrs:0, mergedPrs:0, latestCommits:[], idea:'AI negotiation layer that helps buyers push prices down and helps merchants rescue abandoned deals.', focus:'Convert founder demos into merchant workflows, analytics, and real follow-up loops.' } },
+      project:{ domain:'haggle.com', site:'https://www.usehaggle.shop', repo:'https://github.com/rhy-collab/haggle', repoSlug:'rhy-collab/haggle', branch:'convex-clerk-rebuild', commitsToday:3, totalCommits:18, openPrs:0, mergedPrs:0, latestCommits:['78c19af Fix unsupported flow recovery','d3d2a32 Refactor Haggle intake state machine','2b562bb Delay request card until quote details are complete'], idea:'AI negotiation layer that helps buyers push prices down and helps merchants rescue abandoned deals.', focus:'Convert founder demos into merchant workflows, analytics, and real follow-up loops.' },
+      projects:[
+        { domain:'haggle.com', site:'https://www.usehaggle.shop', repo:'https://github.com/rhy-collab/haggle', repoSlug:'rhy-collab/haggle', branch:'convex-clerk-rebuild', commitsToday:3, totalCommits:18, openPrs:0, mergedPrs:0, latestCommits:['78c19af Fix unsupported flow recovery','d3d2a32 Refactor Haggle intake state machine','2b562bb Delay request card until quote details are complete'], idea:'AI negotiation layer that helps buyers push prices down and helps merchants rescue abandoned deals.', focus:'Get merchant admin, support inbox, and first buyer loop tight enough to sell.' },
+        { domain:'standardlegal.com', site:null, repo:'https://github.com/rhy-collab/standard-legal', repoSlug:'rhy-collab/standard-legal', branch:'main', commitsToday:1, totalCommits:13, openPrs:0, mergedPrs:0, latestCommits:['e38d9b9 Rewrite roadmap in paragraph format','0fe64f3 Add attorney structure transition plan','520fb43 Reorder roadmap around first customer sprint'], idea:'AI-assisted legal operations workspace for turning legal know-how into reusable documents and workflows.', focus:'Turn the roadmap into a first customer sprint, usable templates, and a small intake/admin flow.' },
+      ] },
     pussy: { name:'Pussy',      ai:'Hermes Plus Ching Chong',revenue:0, color:'#ec4899', emoji:'🐱', github:'QuixThe2nd',
       project:{ domain:'piratedvideo.com', repo:null, commitsToday:0, totalCommits:0, openPrs:0, mergedPrs:0, latestCommits:[], idea:'Video discovery and clipping tool that turns messy media libraries into searchable watchable moments.', focus:'Prove legal content sourcing, creator tools, and a subscription-grade playback experience.' } },
     patty: { name:'Patty',      ai:'Copilot & Clawpilot',    revenue:0, color:'#10b981', emoji:'🤠', github:null,
@@ -122,6 +131,9 @@ function render(competitors) {
     [72.22, '$500K'],
     [100, '$1M'],
   ];
+  const companyProjects = sorted.flatMap(([id, c]) =>
+    (c.projects || [c.project]).map((project, index) => ({ id, c, project, index }))
+  );
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -271,6 +283,7 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 @media(max-width:500px){.lb-grid{grid-template-columns:1fr}}
 @media(max-width:1100px){.acct-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.acct-grid{grid-template-columns:1fr}.acct-head{align-items:flex-start;flex-direction:column}}
+@media(max-width:860px){.company-row{grid-template-columns:1fr}.process-axis{grid-template-columns:repeat(4,1fr);row-gap:8px}}
 @media(max-width:760px){
   .lane{align-items:flex-start;flex-wrap:wrap}
   .comp{width:calc(100% - 40px)}
@@ -344,6 +357,34 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .commit-list{margin-top:12px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px}
 .commit-list-title{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;font-weight:900;margin-bottom:6px}
 .commit-item{font-size:10px;color:#6b7280;line-height:1.4;margin-top:4px}
+.company-board{display:flex;flex-direction:column;gap:12px}
+.company-row{background:#0d0700;border:1px solid #1c0e00;border-radius:18px;padding:16px;
+  display:grid;grid-template-columns:270px minmax(0,1fr);gap:16px;position:relative;overflow:hidden}
+.company-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+.company-side{min-width:0}
+.company-owner{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900;color:#f9fafb;margin-bottom:8px}
+.company-index{font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1.4px;font-weight:900}
+.company-name{font-size:20px;font-weight:900;color:var(--c);line-height:1.1;margin-bottom:6px;overflow-wrap:anywhere}
+.company-name a{color:inherit;text-decoration:none}
+.company-brief{font-size:12px;color:#9ca3af;line-height:1.45}
+.company-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.company-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.035);color:#9ca3af;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:900;text-decoration:none}
+.company-chip.repo{color:#86efac;border-color:rgba(34,197,94,0.25);background:rgba(34,197,94,0.08)}
+.company-main{min-width:0}
+.process-axis{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px}
+.process-step{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:0.7px;font-weight:900;text-align:center}
+.company-track{height:52px;background:#050200;border:1px solid rgba(255,255,255,0.05);border-radius:999px;
+  position:relative;overflow:hidden}
+.company-track::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(14.285% - 1px),rgba(255,255,255,0.08) calc(14.285% - 1px),rgba(255,255,255,0.08) 14.285%)}
+.company-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 60%,#fff));
+  width:0;transition:width 1.4s cubic-bezier(0.34,1.56,0.64,1);position:relative}
+.company-horse{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:25px;
+  filter:drop-shadow(0 0 10px var(--c));animation:trot 0.35s steps(2,end) infinite}
+.company-progress{display:flex;justify-content:space-between;align-items:center;margin-top:9px;color:#6b7280;font-size:11px;font-weight:800}
+.company-commits{color:#d1d5db}
+.company-latest{font-size:10px;color:#4b5563;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* === COUNTDOWN === */
 .cd-wrap{text-align:center;padding:32px 20px;border-top:1px solid #140900}
@@ -489,44 +530,55 @@ footer a:hover{color:#9ca3af}
   <div class="acct-head">
     <div>
       <div class="acct-kicker">Project Accountability</div>
-      <div class="acct-title">Show the business, then show the work</div>
-      <p class="acct-copy">Each player needs one main money-making project, a connected GitHub repo, and a public streak of commits or pull requests against that repo.</p>
+      <div class="acct-title">Company tracks: every commit moves the horse</div>
+      <p class="acct-copy">Each company gets one repo-backed lane. The horse moves toward 1,000 commits, with product milestones acting like the checkpoints from first website to real traction.</p>
     </div>
   </div>
-  <div class="acct-grid">
-    ${sorted.map(([id, c]) => {
-      const project = c.project || {};
-      const connected = Boolean(project.repo);
-      const cells = heatCells(id, connected);
+  <div class="company-board">
+    ${companyProjects.map(({ id, c, project, index }) => {
+      const connected = Boolean(project?.repo);
+      const commitTotal = project?.totalCommits || 0;
+      const commitPct = Math.min((commitTotal / 1000) * 100, 100);
+      const latest = project?.latestCommits?.[0] || 'No commits connected yet';
       return `
-    <div class="acct-card" style="--c:${c.color}">
-      <div class="acct-player">
-        <span class="acct-emoji">${c.emoji}</span>
-        <div>
-          <div class="acct-name">${c.name}</div>
-          <div class="acct-ai">${c.ai}</div>
+    <div class="company-row" style="--c:${c.color}">
+      <div class="company-side">
+        <div class="company-owner">
+          <span>${c.emoji}</span>
+          <div>
+            <div>${c.name}</div>
+            <div class="company-index">company ${index + 1} · ${c.ai}</div>
+          </div>
+        </div>
+        <div class="company-name">${project.site ? `<a href="${project.site}" target="_blank">${project.domain}</a>` : project.domain}</div>
+        <p class="company-brief">${project.idea}</p>
+        <div class="company-meta">
+          ${connected ? `<a class="company-chip repo" href="${project.repo}" target="_blank">repo connected</a>` : `<span class="company-chip">repo needed</span>`}
+          ${project.branch ? `<span class="company-chip">${project.branch}</span>` : ''}
+          <span class="company-chip">${project.openPrs || 0} open PRs</span>
         </div>
       </div>
-      <div class="acct-domain">${project.site ? `<a href="${project.site}" target="_blank" style="color:inherit;text-decoration:none">${project.domain}</a>` : project.domain}</div>
-      <p class="acct-idea">${project.idea}</p>
-      <p class="acct-focus">${project.focus}</p>
-      <div class="repo-row">
-        ${connected ? `<a class="repo-link" href="${project.repo}" target="_blank">repo connected</a>` : `<span class="repo-missing">repo needed</span>`}
-        <span class="commit-today">${project.commitsToday || 0} today</span>
+      <div class="company-main">
+        <div class="process-axis">
+          <span class="process-step">URL</span>
+          <span class="process-step">Front end</span>
+          <span class="process-step">Back end</span>
+          <span class="process-step">Admin</span>
+          <span class="process-step">1 user</span>
+          <span class="process-step">10 users</span>
+          <span class="process-step">1K views</span>
+        </div>
+        <div class="company-track" aria-label="${project.domain} repo commit progress toward 1000 commits">
+          <div class="company-fill" style="--c:${c.color};width:${Math.max(commitPct, connected ? 1.5 : 0)}%">
+            <span class="company-horse">🐎</span>
+          </div>
+        </div>
+        <div class="company-progress">
+          <span class="company-commits">${commitTotal} / 1,000 commits</span>
+          <span>${project.commitsToday || 0} today · ${project.mergedPrs || 0} merged PRs</span>
+        </div>
+        <div class="company-latest">${latest}</div>
       </div>
-      <div class="acct-stats">
-        <div class="acct-stat"><span>commits</span><strong>${project.totalCommits || 0}</strong></div>
-        <div class="acct-stat"><span>open PRs</span><strong>${project.openPrs || 0}</strong></div>
-        <div class="acct-stat"><span>merged PRs</span><strong>${project.mergedPrs || 0}</strong></div>
-      </div>
-      <div class="heatmap" aria-label="${c.name} commit heat map">
-        ${cells.map(level => `<span class="heat-cell l${level}"></span>`).join('')}
-      </div>
-      <div class="heat-note"><span>last 6 weeks</span><span>${connected ? 'GitHub activity demo' : 'waiting for repo'}</span></div>
-      ${project.latestCommits?.length ? `<div class="commit-list">
-        <div class="commit-list-title">Latest commits</div>
-        ${project.latestCommits.slice(0, 3).map(commit => `<div class="commit-item">${commit}</div>`).join('')}
-      </div>` : ''}
     </div>`;
     }).join('')}
   </div>
