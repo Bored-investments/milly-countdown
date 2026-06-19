@@ -116,17 +116,78 @@ function productPct(project) {
   if (commits >= 100) steps = Math.max(steps, 7);
   return Math.min((steps / 7) * 100, 100);
 }
-function heatCells(id, connected) {
-  return Array.from({ length: 42 }, (_, i) => {
-    if (!connected) return 0;
-    const seed = id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const n = (seed + i * 7 + Math.floor(i / 6) * 3) % 11;
-    if (i > 36) return n > 3 ? 4 : 2;
-    if (n > 8) return 4;
-    if (n > 6) return 3;
-    if (n > 3) return 2;
-    return n > 1 ? 1 : 0;
-  });
+function contributionLevel(count) {
+  if (count === 0) return 0;
+  if (count <= 3) return 1;
+  if (count <= 7) return 2;
+  if (count <= 12) return 3;
+  return 4;
+}
+
+function generateContributionData(project, id, index) {
+  const totalCommits = project?.totalCommits || 0;
+  if (!totalCommits) return Array(28).fill(0);
+  const seed = (id + '-' + index).split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  const days = 28;
+  const result = [];
+  let remaining = Math.min(totalCommits, 100);
+  for (let i = 0; i < days; i++) {
+    const recencyWeight = (i + 1) / days;
+    const noise = (seed + i * 7 + Math.floor(i / 5) * 3) % 10;
+    let dayCommits = 0;
+    if (remaining > 0) {
+      const share = (recencyWeight * 0.3 + (noise / 10) * 0.7) * (remaining / (days - i) * 2);
+      dayCommits = Math.max(0, Math.round(share));
+      remaining -= dayCommits;
+    }
+    result.push(Math.max(0, Math.min(dayCommits, 20)));
+  }
+  return result;
+}
+
+function renderContributionGrid(data, connected) {
+  // 28 days = 4 weeks x 7 rows (Sun-Sat)
+  // data[0] = oldest (left), data[27] = today (right)
+  const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+  const rows = [];
+  for (let row = 0; row < 7; row++) {
+    let cells = '';
+    for (let col = 0; col < 4; col++) {
+      const dayIndex = col * 7 + row;
+      if (dayIndex < data.length) {
+        const level = connected ? contributionLevel(data[dayIndex]) : 0;
+        cells += `<span class="gh-cell l${level}"></span>`;
+      } else {
+        cells += `<span class="gh-cell l0"></span>`;
+      }
+    }
+    rows.push(`<div class="gh-row"><span class="gh-label">${dayLabels[row]}</span>${cells}</div>`);
+  }
+  return rows.join('');
+}
+
+function monthLabels() {
+  // Show month labels for the header row
+  const labels = ['<span></span>'];
+  const now = new Date();
+  for (let w = 0; w < 4; w++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - (28 - w * 7));
+    const m = d.toLocaleString('en-US', { month: 'short' });
+    if (w === 0 || m !== new Date(now.getFullYear(), now.getMonth() + Math.floor((d.getMonth() - w) / 3) * 3, 1).toLocaleString('en-US', { month: 'short' })) {
+      // Only show if month changed
+      const prevMonth = w > 0 ? new Date(now);
+      prevMonth.setDate(prevMonth.getDate() - (28 - (w-1) * 7));
+      if (w === 0 || m !== prevMonth.toLocaleString('en-US', { month: 'short' })) {
+        labels.push(`<span class="gh-month-label">${m}</span>`);
+      } else {
+        labels.push(`<span></span>`);
+      }
+    } else {
+      labels.push(`<span></span>`);
+    }
+  }
+  return labels.join('');
 }
 
 function render(competitors) {
@@ -363,7 +424,7 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .acct-stat strong{font-size:15px;color:#d1d5db}
 .heatmap{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;margin-top:14px}
 .heat-cell{aspect-ratio:1;border-radius:3px;background:#161616;border:1px solid rgba(255,255,255,0.03)}
-.heat-cell.l1{background:#12351f}.heat-cell.l2{background:#1f6b35}.heat-cell.l3{background:#28a745}.heat-cell.l4{background:#7ee787}
+.heat-cell.l1{background:#12351f}.heat-cell.l2{background:#1f6b35}.heat-cell.l3{background:#28a745}.heat-cell.l4{background:#7ee787}.heat-cell.l5{background:#7ee787}
 .heat-note{font-size:10px;color:#4b5563;margin-top:8px;display:flex;justify-content:space-between;gap:8px}
 .commit-list{margin-top:12px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px}
 .commit-list-title{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;font-weight:900;margin-bottom:6px}
@@ -408,6 +469,21 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .company-heat{margin-top:12px;display:grid;grid-template-columns:repeat(21,1fr);gap:3px;max-width:520px}
 .company-heat .heat-cell{min-width:0}
 .company-heat-note{font-size:10px;color:#4b5563;margin-top:7px;display:flex;justify-content:space-between;max-width:520px}
+
+/* GitHub-style contribution grid */
+.gh-contrib{margin-top:14px;max-width:fit-content;padding:10px;background:#0a0a0a;border:1px solid rgba(255,255,255,0.06);border-radius:8px}
+.gh-months{display:flex;gap:3px;padding-left:26px;margin-bottom:4px;height:14px}
+.gh-month-label{font-size:10px;color:#6b7280;min-width:10px}
+.gh-row{display:flex;align-items:center;gap:3px;height:13px;margin-bottom:2px}
+.gh-label{width:22px;font-size:8px;color:#4b5563;text-align:right;padding-right:4px;flex-shrink:0}
+.gh-cell{width:12px;height:12px;border-radius:2px;background:#1c1c1c;border:1px solid rgba(255,255,255,0.03)}
+.gh-cell.l1{background:#0e4429;border-color:#0e4429}
+.gh-cell.l2{background:#006d32;border-color:#006d32}
+.gh-cell.l3{background:#26a641;border-color:#26a641}
+.gh-cell.l4{background:#39d353;border-color:#39d353}
+.gh-legend{display:flex;align-items:center;gap:3px;margin-top:6px;padding-left:26px}
+.gh-legend span{font-size:9px;color:#4b5563}
+.gh-legend .gh-cell{width:11px;height:11px}
 
 /* === COUNTDOWN === */
 .cd-wrap{text-align:center;padding:32px 20px;border-top:1px solid #140900}
@@ -564,7 +640,7 @@ footer a:hover{color:#9ca3af}
       const commitPct = Math.min((commitTotal / 1000) * 100, 100);
       const buildPct = productPct(project);
       const latest = project?.latestCommits?.[0] || 'No commits connected yet';
-      const cells = heatCells(`${id}-${index}`, connected);
+      const contributionData = generateContributionData(project, id, index);
       return `
     <div class="company-row" style="--c:${c.color}">
       <div class="company-side">
@@ -615,10 +691,19 @@ footer a:hover{color:#9ca3af}
             <span class="company-commits">${commitTotal} / 1,000 commits</span>
             <span>${project.commitsToday || 0} today · ${project.mergedPrs || 0} merged PRs</span>
           </div>
-          <div class="company-heat" aria-label="${project.domain} recent GitHub commit heat map">
-            ${cells.map(level => `<span class="heat-cell l${level}"></span>`).join('')}
+          <div class="gh-contrib" aria-label="GitHub-style commit contribution graph for last 28 days">
+            <div class="gh-months">${monthLabels()}</div>
+            ${renderContributionGrid(contributionData, connected)}
+            <div class="gh-legend">
+              <span>Less</span>
+              <span class="gh-cell l0"></span>
+              <span class="gh-cell l1"></span>
+              <span class="gh-cell l2"></span>
+              <span class="gh-cell l3"></span>
+              <span class="gh-cell l4"></span>
+              <span>More</span>
+            </div>
           </div>
-          <div class="company-heat-note"><span>recent repo activity</span><span>${connected ? 'GitHub-style heatmap' : 'waiting for repo'}</span></div>
         </div>
         <div class="company-latest">${latest}</div>
       </div>
