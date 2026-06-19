@@ -167,24 +167,18 @@ function renderContributionGrid(data, connected) {
 }
 
 function monthLabels() {
-  // Show month labels for the header row
   const labels = ['<span></span>'];
   const now = new Date();
+  let lastMonth = '';
   for (let w = 0; w < 4; w++) {
     const d = new Date(now);
     d.setDate(d.getDate() - (28 - w * 7));
     const m = d.toLocaleString('en-US', { month: 'short' });
-    if (w === 0 || m !== new Date(now.getFullYear(), now.getMonth() + Math.floor((d.getMonth() - w) / 3) * 3, 1).toLocaleString('en-US', { month: 'short' })) {
-      // Only show if month changed
-      const prevMonth = w > 0 ? new Date(now);
-      prevMonth.setDate(prevMonth.getDate() - (28 - (w-1) * 7));
-      if (w === 0 || m !== prevMonth.toLocaleString('en-US', { month: 'short' })) {
-        labels.push(`<span class="gh-month-label">${m}</span>`);
-      } else {
-        labels.push(`<span></span>`);
-      }
+    if (m !== lastMonth) {
+      labels.push(`<span class="gh-month-label">${m}</span>`);
+      lastMonth = m;
     } else {
-      labels.push(`<span></span>`);
+      labels.push('<span></span>');
     }
   }
   return labels.join('');
