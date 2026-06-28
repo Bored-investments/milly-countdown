@@ -105,16 +105,22 @@ function racePct(revenue) {
   if (r <= 100_000) return 30 + ((r - 10_000) / 90_000) * 20;
   return 50 + ((r - 100_000) / 900_000) * 50;
 }
-function productPct(project) {
+function productSteps(project) {
   const commits = project?.totalCommits || 0;
-  let steps = project?.domain ? 1 : 0;
-  if (project?.repo || commits >= 1) steps = Math.max(steps, 2);
-  if (commits >= 5) steps = Math.max(steps, 3);
-  if (commits >= 10) steps = Math.max(steps, 4);
-  if (commits >= 25) steps = Math.max(steps, 5);
-  if (commits >= 50) steps = Math.max(steps, 6);
-  if (commits >= 100) steps = Math.max(steps, 7);
-  return Math.min((steps / 7) * 100, 100);
+  return [
+    project?.domain ? 'done' : 'todo',                          // URL
+    commits >= 1 ? 'done' : 'todo',                              // Front end
+    (project?.repo && commits >= 3) ? 'done' : 'todo',           // Back end
+    commits >= 8 ? 'done' : 'todo',                              // Admin
+    commits >= 15 ? 'done' : 'todo',                             // 1 user
+    commits >= 40 ? 'done' : 'todo',                             // 10 users
+    commits >= 80 ? 'done' : 'todo',                             // 1K views
+  ];
+}
+function productPct(project) {
+  const steps = productSteps(project);
+  const completed = steps.filter(s => s === 'done').length;
+  return Math.min((completed / 7) * 100, 100);
 }
 function contributionLevel(count) {
   if (count === 0) return 0;
@@ -428,7 +434,7 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
   display:grid;grid-template-columns:270px minmax(0,1fr);gap:16px;position:relative;overflow:hidden}
 .company-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
 .company-side{min-width:0}
-.company-owner{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900;color:#f9fafb;margin-bottom:8px}
+.company-owner{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900;color:#f9fafb;margin-bottom:6px}
 .company-index{font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1.4px;font-weight:900}
 .company-name{font-size:20px;font-weight:900;color:var(--c);line-height:1.1;margin-bottom:6px;overflow-wrap:anywhere}
 .company-name a{color:inherit;text-decoration:none}
@@ -439,7 +445,8 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
 .company-chip.repo{color:#86efac;border-color:rgba(34,197,94,0.25);background:rgba(34,197,94,0.08)}
 .company-main{min-width:0}
 .process-axis{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px}
-.process-step{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:0.7px;font-weight:900;text-align:center}
+.process-step{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:0.7px;font-weight:900;text-align:center;padding:4px 0;border-radius:6px;transition:all 0.4s ease}
+.process-step.done{color:#22c55e;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15)}
 .company-section-label{font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1.4px;font-weight:900;margin:0 0 8px}
 .company-track{height:48px;background:#050200;border:1px solid rgba(255,255,255,0.05);border-radius:999px;
   position:relative;overflow:hidden}
@@ -451,14 +458,24 @@ html,body{min-height:100vh;background:#080401;color:#fff;font-family:'Inter',san
   filter:drop-shadow(0 0 10px var(--c));animation:trot 0.35s steps(2,end) infinite}
 .commit-race{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)}
 .commit-axis{display:flex;justify-content:space-between;color:#4b5563;font-size:9px;font-weight:900;letter-spacing:0.5px;margin-bottom:6px}
+.commit-axis .commit-tick{color:#374151;font-weight:700}
+.commit-axis .commit-goal{color:#22c55e}
 .commit-track{height:28px;background:#050200;border:1px solid rgba(255,255,255,0.05);border-radius:999px;position:relative;overflow:hidden}
+.commit-track::after{content:'🏁';position:absolute;right:-2px;top:-10px;font-size:12px;opacity:0.5;z-index:2}
+.commit-track .ct-tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.08);z-index:1}
+.commit-track .ct-tick:nth-child(1){left:10%}
+.commit-track .ct-tick:nth-child(2){left:25%}
+.commit-track .ct-tick:nth-child(3){left:50%}
+.commit-track .ct-tick:nth-child(4){left:75%}
 .commit-track::before{content:'';position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),rgba(255,255,255,0.06) calc(10% - 1px),rgba(255,255,255,0.06) 10%)}
 .commit-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#166534,#22c55e,#7ee787);width:0;
   transition:width 1.2s cubic-bezier(0.34,1.56,0.64,1);position:relative}
-.commit-horse{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:17px;filter:drop-shadow(0 0 8px #22c55e)}
+.commit-fill .commit-ct{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:900;color:rgba(0,0,0,0.7);z-index:4}
+.commit-horse{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:17px;filter:drop-shadow(0 0 8px #22c55e);z-index:5}
 .company-progress{display:flex;justify-content:space-between;align-items:center;margin-top:9px;color:#6b7280;font-size:11px;font-weight:800}
 .company-commits{color:#d1d5db}
+.today-badge{display:inline-block;background:rgba(34,197,94,0.15);color:#86efac;padding:1px 8px;border-radius:999px;font-size:10px;border:1px solid rgba(34,197,94,0.2)}
 .company-latest{font-size:10px;color:#4b5563;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .company-heat{margin-top:12px;display:grid;grid-template-columns:repeat(21,1fr);gap:3px;max-width:520px}
 .company-heat .heat-cell{min-width:0}
@@ -632,6 +649,7 @@ footer a:hover{color:#9ca3af}
       const connected = Boolean(project?.repo);
       const commitTotal = project?.totalCommits || 0;
       const commitPct = Math.min((commitTotal / 1000) * 100, 100);
+      const buildSteps = productSteps(project);
       const buildPct = productPct(project);
       const latest = project?.latestCommits?.[0] || 'No commits connected yet';
       const contributionData = generateContributionData(project, id, index);
@@ -656,13 +674,10 @@ footer a:hover{color:#9ca3af}
       <div class="company-main">
         <div class="company-section-label">Product path</div>
         <div class="process-axis">
-          <span class="process-step">URL</span>
-          <span class="process-step">Front end</span>
-          <span class="process-step">Back end</span>
-          <span class="process-step">Admin</span>
-          <span class="process-step">1 user</span>
-          <span class="process-step">10 users</span>
-          <span class="process-step">1K views</span>
+          ${['URL','Front end','Back end','Admin','1 user','10 users','1K views'].map((label, si) => {
+            const status = buildSteps[si];
+            return `<span class="process-step ${status}">${status === 'done' ? '✓ ' : ''}${label}</span>`;
+          }).join('')}
         </div>
         <div class="company-track" aria-label="${project.domain} product milestone progress">
           <div class="company-fill" style="--c:${c.color};width:${Math.max(buildPct, project?.domain ? 1.5 : 0)}%">
@@ -670,20 +685,26 @@ footer a:hover{color:#9ca3af}
           </div>
         </div>
         <div class="company-progress">
-          <span>${Math.round(buildPct)}% through product checkpoints</span>
+          <span>${buildSteps.filter(s => s === 'done').length} of 7 checkpoints</span>
           <span>${project.site ? 'URL live' : 'URL named'} · ${connected ? 'repo linked' : 'repo needed'}</span>
         </div>
         <div class="commit-race">
           <div class="company-section-label">Commit race</div>
-          <div class="commit-axis"><span>0</span><span>250</span><span>500</span><span>750</span><span>1,000</span></div>
+          <div class="commit-axis">
+            <span>0</span>
+            ${[100,250,500,750].map(n => `<span class="commit-tick">${n.toLocaleString()}</span>`).join('')}
+            <span class="commit-goal">1,000</span>
+          </div>
           <div class="commit-track" aria-label="${project.domain} commit progress toward 1000 commits">
+            <span class="ct-tick"></span><span class="ct-tick"></span><span class="ct-tick"></span><span class="ct-tick"></span>
             <div class="commit-fill" style="width:${Math.max(commitPct, connected ? 1.5 : 0)}%">
+              <span class="commit-ct">${commitTotal}</span>
               <span class="commit-horse">🐎</span>
             </div>
           </div>
           <div class="company-progress">
             <span class="company-commits">${commitTotal} / 1,000 commits</span>
-            <span>${project.commitsToday || 0} today · ${project.mergedPrs || 0} merged PRs</span>
+            <span>${project.commitsToday > 0 ? `<span class="today-badge">${project.commitsToday} today</span>` : '0 today'} · ${project.mergedPrs || 0} merged PRs</span>
           </div>
           <div class="gh-contrib" aria-label="GitHub-style commit contribution graph for last 28 days">
             <div class="gh-months">${monthLabels()}</div>
